@@ -79,11 +79,20 @@ getChanged({
                         `npm uninstall ${
                             localDependencies.map(({ name }) => name).join(" ")
                         }`,
-                        `npm i ${
-                            localDependencies.map(({ packFilename }) => {
-                                return join(relativePackedPackagesPath, packFilename);
-                            }).join(" ")
-                        }`
+                        ...(package.localDependencies.length > 0 ?
+                            [`npm i ${
+                                package.localDependencies.map(({ packFilename }) => {
+                                    return join(relativePackedPackagesPath, packFilename);
+                                }).join(" ")
+                            }`] : []
+                        ),
+                        ...(package.localDevDependencies.length > 0 ?
+                            [`npm i -D ${
+                                package.localDevDependencies.map(({ packFilename }) => {
+                                    return join(relativePackedPackagesPath, packFilename);
+                                }).join(" ")
+                            }`] : []
+                        )
                     ] : [
                         `npm i`
                     ]
