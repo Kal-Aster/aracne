@@ -31,6 +31,7 @@ module.exports = function getMostRecentMTimeMs(package) {
     );
 
     walkDirectoryFiles(package.path, file => {
+        file = file.replace(/[\\\/]+/g, "/");
         if (!sourcePatternRegexes.some(regex => {
             return file.match(regex) != null;
         })) {
