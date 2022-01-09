@@ -24,7 +24,7 @@ Ti permette di ricevere una lista dei pacchetti che risultano avere necessità d
 
 ### `build`
 Ti permette di costruire i pacchetti e collegarne le dipendenze interne.
-Puoi far sapere ad Aracne come costruire i tuoi pacchetti configurando la [proprietà "build"](#%22build%22).
+Puoi far sapere ad Aracne come costruire i tuoi pacchetti configurando la [proprietà "build"](#build-1).
 > La costruzione dei pacchetti non può essere separata dal collegamento delle dipendeze interne, siccome l'installazione delle dipendenze interne è indirizzata al pacchetto impacchettato e non alla cartella di origine, per evitare un collegamento simbolico.
 
 ### `version`

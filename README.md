@@ -24,7 +24,7 @@ It allows you to receive a list of packages that need a version increase.
 
 ### `build`
 It allows you to build packages and link their internal dependencies.  
-You can let Aracne know how to build your packages configuring the ["build" property](#%22build%22).
+You can let Aracne know how to build your packages configuring the ["build" property](#build-1).
 > Packages building can't be split from the internal dependencies linking, because the internal dependencies installation addresses the packed package and not the source folder, avoiding symlinks
 
 ### `version`
