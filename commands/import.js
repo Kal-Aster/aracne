@@ -171,10 +171,17 @@ const { join, basename } = require("path");
         );
         return;
     }
+    runCommand("build");
+    execSync("git add -A", { stdio: "ignore" });
+    if (execSync(
+        "git diff HEAD --name-only",
+        { stdio: "pipe", encoding: "utf-8" }
+    ).slice(0, -1) !== "") {
+        execSync(`git commit -m "build: import package ${package.name}@${package.version}"`);
+    }
 
     execSync(
         `git tag "${name}@${version}" HEAD`,
         { stdio: "ignore", encoding: "utf-8" }
     );
-    runCommand("build");
 })();
