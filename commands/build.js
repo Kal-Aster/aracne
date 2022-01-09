@@ -72,7 +72,23 @@ getChanged({
     console.log("Installing dependencies");
     try {
         execSync(
-            `cd "${package.path}" && npm i`,
+            [
+                `cd "${package.path}"`,
+                ...(localDependencies.length > 0 ? 
+                    [
+                        `npm uninstall ${
+                            localDependencies.map(({ name }) => name).join(" ")
+                        }`,
+                        `npm i ${
+                            localDependencies.map(({ packFilename }) => {
+                                return join(relativePackedPackagesPath, packFilename);
+                            }).join(" ")
+                        }`
+                    ] : [
+                        `npm i`
+                    ]
+                )
+            ].join(" && "),
             { stdio: "pipe", encoding: "utf-8" }
         );
     } catch (error) {
