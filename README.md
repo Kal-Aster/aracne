@@ -1,4 +1,5 @@
 # ARACNE
+Monorepo manager
 
 ## Origin
 I created this library because I was too lazy to learn [lerna](https://github.com/lerna/lerna/) or to find an alternative to it and my ideas were clear enough about what I was looking for to give me the courage to reinvent the wheel.

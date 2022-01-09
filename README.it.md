@@ -1,4 +1,5 @@
 # ARACNE
+Gestore di monorepo
 
 ## Origine
 Ho creato questa libreria perchè ero troppo pigro per imparare lerna o per trovarne un'alternativa e con le idee abbastanza chiare di cosa volessi da avere il coraggio di reinventare la ruota.
