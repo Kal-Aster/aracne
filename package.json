@@ -1,0 +1,14 @@
+{
+  "name": "aracne",
+  "version": "1.0.0",
+  "description": "Monorepo manager",
+  "main": "utils/runCommand.js",
+  "bin": "cli.js",
+  "author": "Kal-Aster",
+  "license": "MIT",
+  "dependencies": {
+    "globrex": "^0.1.2",
+    "inquirer": "^8.2.0",
+    "yargs": "^17.3.1"
+  }
+}
