@@ -4,7 +4,11 @@ const { readFileSync, writeFileSync } = require("fs");
 const { join } = require("path");
 
 module.exports = function restorePackage(package) {
-    const localDependencies = package.localDependencies.concat(package.localDevDependencies);
+    const localDependencies = package.localDependencies.concat(
+        package.localPeerDependencies
+    ).concat(
+        package.localDevDependencies
+    );
     if (localDependencies.length === 0) {
         return;
     }

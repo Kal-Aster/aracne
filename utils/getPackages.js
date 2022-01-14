@@ -28,6 +28,7 @@ module.exports = function getPackages({
             name,
             dependencies,
             devDependencies,
+            peerDependencies,
             version
         } = JSON.parse(readFileSync(
             join(path, "package.json"),
@@ -42,6 +43,9 @@ module.exports = function getPackages({
             ),
             devDependencies: (
                 devDependencies ? Object.keys(devDependencies) : []
+            ),
+            peerDependencies: (
+                peerDependencies ? Object.keys(peerDependencies) : []
             )
         };
     }).map((package, _, packages) => {
@@ -65,8 +69,19 @@ module.exports = function getPackages({
             return packages[index];
         }).filter(package => package != null);
 
+        const localPeerDependencies = (
+            package.peerDependencies
+        ).map(dependency => {
+            const index = packages.findIndex(package => package.name === dependency);
+            if (index < 0) {
+                return null;
+            }
+            return packages[index];
+        }).filter(package => package != null);
+
         package.localDependencies = localDependencies;
         package.localDevDependencies = localDevDependencies;
+        package.localPeerDependencies = localPeerDependencies;
         return package;
     });
 
@@ -81,6 +96,8 @@ module.exports = function getPackages({
     function unshiftPackageAndLocalDependencies(package, packages, list) {
         list.unshift(package);
         const localDependencies = package.localDependencies.concat(
+            package.localPeerDependencies
+        ).concat(
             includeDevDeps ? package.localDevDependencies : []
         );
         for (let i = localDependencies.length - 1; i >= 0; i--) {

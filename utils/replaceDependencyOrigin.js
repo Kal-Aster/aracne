@@ -6,7 +6,7 @@ module.exports = function replaceDependencyOrigin(
     origin
 ) {
     const regex = new RegExp(
-        `"d(?:evD)?ependencies":\\s*{\\s*(?:"[^"]*":\\s*"[^"]*",\\s*)*"${
+        `"(?:d|devD|peerD)?ependencies":\\s*{\\s*(?:"[^"]*":\\s*"[^"]*",\\s*)*"${
             escapeRegExpSource(dependency)
         }":\\s*"([^"]*)"`, "g"
     );

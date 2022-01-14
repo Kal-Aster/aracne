@@ -22,7 +22,11 @@ getChanged({
     includeDevDeps: true
 }).forEach(package => {
     console.group(`Package ${package.name}@${package.version}:`);
-    const localDependencies = package.localDependencies.concat(package.localDevDependencies)
+    const localDependencies = package.localDependencies.concat(
+        package.localPeerDependencies
+    ).concat(
+        package.localDevDependencies
+    );
     if (localDependencies.length > 0) {
         const packageJSONPath = join(package.path, "package.json");
         let packageJSON = readFileSync(
@@ -82,6 +86,13 @@ getChanged({
                         ...(package.localDependencies.length > 0 ?
                             [`npm i ${
                                 package.localDependencies.map(({ packFilename }) => {
+                                    return join(relativePackedPackagesPath, packFilename);
+                                }).join(" ")
+                            }`] : []
+                        ),
+                        ...(package.localPeerDependencies.length > 0 ?
+                            [`npm i --save-peer ${
+                                package.localPeerDependencies.map(({ packFilename }) => {
                                     return join(relativePackedPackagesPath, packFilename);
                                 }).join(" ")
                             }`] : []

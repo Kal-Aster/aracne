@@ -69,6 +69,8 @@ module.exports = function getChanged({
         package.directlyChanged = directlyChanged;
 
         const localDependencies = package.localDependencies.concat(
+            package.localPeerDependencies
+        ).concat(
             includeDevDeps ? package.localDevDependencies : []
         );
         package.mostRecentChangedTime = localDependencies.reduce(
