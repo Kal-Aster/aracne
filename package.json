@@ -1,6 +1,6 @@
 {
   "name": "aracne",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Monorepo manager",
   "main": "utils/runCommand.js",
   "bin": "cli.js",
