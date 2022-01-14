@@ -109,7 +109,7 @@ getChanged({
                     ]
                 )
             ].join(" && "),
-            { stdio: "pipe", encoding: "utf-8" }
+            { stdio: "inherit", encoding: "utf-8" }
         );
     } catch (error) {
         console.groupEnd();
@@ -122,7 +122,7 @@ getChanged({
         try {
             execSync(
                 `cd "${package.path}" && ${buildCommand}`,
-                { stdio: "pipe", encoding: "utf-8" }
+                { stdio: "inherit", encoding: "utf-8" }
             );
         } catch (error) {
             console.groupEnd();
