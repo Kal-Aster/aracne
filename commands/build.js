@@ -9,7 +9,7 @@ const {
     existsSync, lstatSync, mkdirSync,
     readFileSync, writeFileSync
 } = require("fs");
-const { join } = require("path");
+const { join, resolve } = require("path");
 
 const packedPackagesPath = getPackedPackagesPath();
 
@@ -143,10 +143,9 @@ getChanged({
             packageJSON = replaceDependencyOrigin(
                 packageJSON,
                 dependency.name,
-                `file:./${dependency.packFilename}`
-                );
-            }
-        );
+                `file:${resolve(join(packedPackagesPath, dependency.packFilename))}`
+            );
+        });
         writeFileSync(packageJSONPath, packageJSON);
     }
     let error = null;
