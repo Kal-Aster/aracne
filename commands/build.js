@@ -88,40 +88,40 @@ const changed = getChanged({
         if (errors.length > 0) {
             console.log("Installing dependencies");
             try {
+                const commands = [
+                    `cd "${package.path}"`
+                ];
+                if (localDependencies.length > 0) {
+                    commands.push(`npm uninstall ${
+                        localDependencies.map(({ name }) => name).join(" ")
+                    }`);
+                    if (package.localDependencies.length > 0) {
+                        commands.push(`npm i ${
+                            package.localDependencies.map(({ packFilename }) => {
+                                return join(relativePackedPackagesPath, packFilename);
+                            }).join(" ")
+                        }`);
+                    }
+                    if (package.localPeerDependencies.length > 0) {
+                        commands.push(`npm i --save-peer ${
+                            package.localPeerDependencies.map(({ packFilename }) => {
+                                return join(relativePackedPackagesPath, packFilename);
+                            }).join(" ")
+                        }`);
+                    }
+                    if (package.localDevDependencies.length > 0) {
+                        commands.push(`npm i -D ${
+                            package.localDevDependencies.map(({ packFilename }) => {
+                                return join(relativePackedPackagesPath, packFilename);
+                            }).join(" ")
+                        }`);
+                    }
+                } else {
+                    commands.push(`npm i`);
+                }
+
                 execSync(
-                    [
-                        `cd "${package.path}"`,
-                        ...(localDependencies.length > 0 ? 
-                            [
-                                `npm uninstall ${
-                                    localDependencies.map(({ name }) => name).join(" ")
-                                }`,
-                                ...(package.localDependencies.length > 0 ?
-                                    [`npm i ${
-                                        package.localDependencies.map(({ packFilename }) => {
-                                            return join(relativePackedPackagesPath, packFilename);
-                                        }).join(" ")
-                                    }`] : []
-                                ),
-                                ...(package.localPeerDependencies.length > 0 ?
-                                    [`npm i --save-peer ${
-                                        package.localPeerDependencies.map(({ packFilename }) => {
-                                            return join(relativePackedPackagesPath, packFilename);
-                                        }).join(" ")
-                                    }`] : []
-                                ),
-                                ...(package.localDevDependencies.length > 0 ?
-                                    [`npm i -D ${
-                                        package.localDevDependencies.map(({ packFilename }) => {
-                                            return join(relativePackedPackagesPath, packFilename);
-                                        }).join(" ")
-                                    }`] : []
-                                )
-                            ] : [
-                                `npm i`
-                            ]
-                        )
-                    ].join(" && "),
+                    commands.join(" && "),
                     { stdio: "inherit", encoding: "utf-8" }
                 );
             } catch (error) {
