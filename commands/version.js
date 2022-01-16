@@ -180,7 +180,7 @@ const { prompt } = require("inquirer");
     runCommand("build");
     [
         "git add -A",
-        `git commit -m "chore: increased versions" -m "${
+        `git commit -m "chore: increase versions" -m "${
             changed.map(({ name, version }) => {
                 return ` - ${name}@${version}`;
             }).join("\n")
