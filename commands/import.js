@@ -177,7 +177,7 @@ const { join, basename } = require("path");
         "git diff HEAD --name-only",
         { stdio: "pipe", encoding: "utf-8" }
     ).slice(0, -1) !== "") {
-        execSync(`git commit -m "build: import package ${name}@${version}"`);
+        execSync(`git commit -m "chore: import package ${name}@${version}"`);
     }
 
     execSync(
