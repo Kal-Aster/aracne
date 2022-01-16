@@ -4,13 +4,14 @@ const getPackedPackagesPath = require("../utils/getPackedPackagesPath");
 const getPackFilename = require("../utils/getPackFilename");
 const replaceDependencyOrigin = require("../utils/replaceDependencyOrigin");
 
+const installedCheck = require("installed-check-core");
+
 const { execSync } = require("child_process");
 const {
     existsSync, lstatSync, mkdirSync,
     readFileSync, writeFileSync
 } = require("fs");
 const { join, resolve } = require("path");
-const installedCheck = require("installed-check-core");
 
 const packedPackagesPath = getPackedPackagesPath();
 
@@ -79,22 +80,22 @@ const changed = getChanged({
             continue;
         }
         
-        const { errors } = await installedCheck({
-            engineCheck: false,
-            versionCheck: true,
-            engineNoDev: false,
-            path: package.path
-        });
-        if (errors.length > 0) {
+        const { errors } = (package.changed ?
+            Object.create(null) :
+            await installedCheck({
+                engineCheck: false,
+                versionCheck: true,
+                engineNoDev: false,
+                path: package.path
+            })
+        );
+        if (!errors || errors.length > 0) {
             console.log("Installing dependencies");
             try {
                 const commands = [
                     `cd "${package.path}"`
                 ];
                 if (localDependencies.length > 0) {
-                    commands.push(`npm uninstall ${
-                        localDependencies.map(({ name }) => name).join(" ")
-                    }`);
                     if (package.localDependencies.length > 0) {
                         commands.push(`npm i ${
                             package.localDependencies.map(({ packFilename }) => {
