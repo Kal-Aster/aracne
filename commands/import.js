@@ -57,7 +57,13 @@ const Languages = require("../utils/Languages");
     ) : `packages/${basename(path)}`;
     // check if dest path already exists
 
-    const config = getFolderConfig(packagePath, false);
+    let config;
+    try {
+        config = getFolderConfig(packagePath, false);
+    } catch (e) {
+        console.log(e.message);
+        process.exit(1);
+    }
     if (!(await prompt([{
         name: "confirm",
         type: "confirm",

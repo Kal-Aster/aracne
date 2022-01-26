@@ -13,5 +13,10 @@ const getFolderConfig = require("../utils/getFolderConfig");
         process.exit(1);
     }
 
-    console.log(getFolderConfig(folder, false));
+    try {
+        console.log(getFolderConfig(folder, false));
+    } catch (e) {
+        console.log(e.message);
+        process.exit(1);
+    }
 })();

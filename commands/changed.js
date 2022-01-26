@@ -1,7 +1,15 @@
 const getChanged = require("../utils/getChanged");
 
 (async () => {
-    const changed = await getChanged({ filtered: true });
+    let changed;
+    try {
+        changed = await getChanged({
+            filtered: false
+        });
+    } catch (e) {
+        console.log(e.message);
+        process.exit(1);
+    }
     console.group(`${changed.length} packages has changed`);
     changed.forEach(({
         name, directlyChanged,

@@ -41,7 +41,13 @@ const { prompt } = require("inquirer");
         return;
     }
 
-    let changed = await getChanged({ filtered: false });
+    let changed;
+    try {
+        changed = await getChanged({ filtered: false });
+    } catch (e) {
+        console.log(e.message);
+        process.exit(1);
+    }
     if (changed.length === 0) {
         console.log("No packages found");
         return;
@@ -178,7 +184,11 @@ const { prompt } = require("inquirer");
         return;
     }
 
-    runCommand("build");
+    try {
+        runCommand("build");
+    } catch (e) {
+        process.exit(1);
+    }
 
     execSync(`git add -A`, { stdio: "ignore" });
     const hasAnythingChanged = execSync(

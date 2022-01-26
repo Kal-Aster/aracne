@@ -3,10 +3,16 @@ const getChanged = require("../utils/getChanged");
 const { execSync } = require("child_process");
 
 (async () => {
-    const changed = await getChanged({
-        filtered: false,
-        includeDevDeps: true
-    });
+    let changed;
+    try {
+        changed = await getChanged({
+            filtered: false,
+            includeDevDeps: true
+        });
+    } catch (e) {
+        console.log(e.message);
+        process.exit(1);
+    }
 
     for (let i = 0; i < changed.length; i++) {
         const package = changed[i];
