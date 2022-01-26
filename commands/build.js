@@ -24,8 +24,9 @@ const { execSync } = require("child_process");
         try {
             await package.manager.install(package);
         } catch (error) {
+            console.log("Error installing packages");
             console.groupEnd();
-            throw error;
+            process.exit(1);
         }
 
         const buildCommand = package.config.build;
@@ -37,8 +38,9 @@ const { execSync } = require("child_process");
                     { stdio: "inherit", encoding: "utf-8" }
                 );
             } catch (error) {
+                console.log("Error building");
                 console.groupEnd();
-                throw error;
+                process.exit(1);
             }
         } else {
             console.log("Skipping build");

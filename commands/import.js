@@ -1,9 +1,15 @@
 const runCommand = require("../utils/runCommand");
+const getFolderConfig = require("../utils/getFolderConfig");
+const getFullConfig = require("../utils/getFullConfig");
+
+const yargs = require("yargs");
 
 const { execSync } = require("child_process");
-const { lstatSync, existsSync, readFileSync } = require("fs");
+const { lstatSync, existsSync, readFileSync, writeFileSync } = require("fs");
 const { prompt } = require("inquirer");
-const { join, basename } = require("path");
+const { basename } = require("path");
+const normalizeLanguageConfig = require("../utils/normalizeLanguageConfig");
+const Languages = require("../utils/Languages");
 
 (async () => {
     if (
@@ -22,7 +28,16 @@ const { join, basename } = require("path");
         return;
     }
 
-    const path = process.argv[2];
+    const { argv } = (
+        yargs(process.argv.slice(2))
+        .option("dest", {
+            type: "string",
+            description: "Package destination folder",
+            default: undefined
+        })
+    );
+    
+    const [ path ] = argv._;
     if (!path) {
         console.log("Specify path of the repository to import");
         return;
@@ -36,8 +51,29 @@ const { join, basename } = require("path");
         console.log(`"${path}" is not a directory`);
         return;
     }
-    if (!existsSync(join(path, "package.json"))) {
-        console.log(`"${path}" is not a package`);
+
+    const packagePath = argv.dest ? (
+        argv.dest.replace(/[\\\/]+/, "/").replace(/^\/|\/$/, "")
+    ) : `packages/${basename(path)}`;
+    // check if dest path already exists
+
+    const config = getFolderConfig(packagePath, false);
+    if (!(await prompt([{
+        name: "confirm",
+        type: "confirm",
+        message: `Package will have this config:\n${
+            JSON.stringify(config, undefined, 2)
+        }\nContinue?`
+    }])).confirm) {
+        return;
+    }
+
+    const manager = Languages.getManager(
+        config.lang, config.manager
+    );
+
+    if (!(await manager.isValid(path))) {
+        console.log(`"${path}" is not a valid ${manager.name} package`);
         return;
     }
     
@@ -61,10 +97,14 @@ const { join, basename } = require("path");
     }
 
     if (!externalHasUncommitedChanges) {
-        const { version } = JSON.parse(readFileSync(
-            join(path, "package.json"),
-            { encoding: "utf-8" }
-        ));
+        const {
+            version,
+            name
+        } = await manager.getPackage(path);
+        if (!name) {
+            console.log(`Package has no name`);
+            return;
+        }
         if (typeof version !== "string") {
             console.log(`Package version is not a string`);
             return;
@@ -83,8 +123,6 @@ const { join, basename } = require("path");
         console.log("There are no commits to import");
         return;
     }
-
-    const packagePath = `packages/${basename(path)}`;
 
     const preImportHead = execSync(
         "git log --format=%h -1",
@@ -151,33 +189,44 @@ const { join, basename } = require("path");
     
     console.log("All commits imported");
     
-    const { version, name } = JSON.parse(readFileSync(
-        join(packagePath, "package.json"),
-        { encoding: "utf-8" }
-    ));
+    const { version, name } = await manager.getPackage(path);
+    let shouldRevert = false;
+    if (!name) {
+        console.log(`Package has no name`);
+        shouldRevert = true;
+    }
     if (typeof version !== "string") {
-        console.log(`Package version is not a string: reverting import`);
-        execSync(
-            `git reset --hard ${preImportHead}`,
-            { stdio: "ignore", encoding: "utf-8" }
-        );
-        return;
+        console.log(`Package version is not a string`);
+        shouldRevert = true;
     }
     if (version.match(/\d+.\d+.\d+/) === null) {
-        console.log("Unsupported version type: reverting import");
+        console.log("Unsupported version type");
+        shouldRevert = true;
+    }
+
+    if (shouldRevert) {
         execSync(
             `git reset --hard ${preImportHead}`,
             { stdio: "ignore", encoding: "utf-8" }
         );
         return;
     }
-    runCommand("build");
+
+    try {
+        runCommand("build");
+    } catch (e) {
+        execSync(
+            `git reset --hard ${preImportHead}`,
+            { stdio: "ignore", encoding: "utf-8" }
+        );
+        return;
+    }
     execSync("git add -A", { stdio: "ignore" });
     if (execSync(
         "git diff HEAD --name-only",
         { stdio: "pipe", encoding: "utf-8" }
     ).slice(0, -1) !== "") {
-        execSync(`git commit -m "chore: import package ${name}@${version}"`);
+        execSync(`git commit -m "chore: import package" -m "${name}@${version}"`);
     }
 
     execSync(

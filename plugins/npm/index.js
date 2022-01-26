@@ -66,7 +66,7 @@ module.exports = {
 
         return package;
     },
-    async getLocalDependencies(package, packages) {
+    async initLocalDependencies(package, packages) {
         Object.defineProperties(package, {
             localDependencies: {
                 value: (

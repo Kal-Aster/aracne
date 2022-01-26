@@ -10,12 +10,8 @@ module.exports = function normalizeLanguageConfig(config) {
     );
 
     if (!hasLang && !hasManager) {
-        const {
-            lang,
-            manager
-        } = getDefaultFullConfig().packages["*"];
-        config.lang = lang;
-        config.manager = manager;
+        config.lang = "js";
+        config.manager = Languages.getDefaultManagerName("js");
         return config;
     }
     

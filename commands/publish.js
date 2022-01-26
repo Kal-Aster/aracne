@@ -9,7 +9,7 @@ const { prompt } = require("inquirer");
 (async () => {
     runCommand("version");
     runCommand("restore");
-    const changed = getChanged({
+    const changed = await getChanged({
         includeDevDeps: true,
         filtered: false
     });

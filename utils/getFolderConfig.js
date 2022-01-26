@@ -1,11 +1,7 @@
-const extractFolderConfig = require("./extractFolderConfig");
-const getDefaultFullConfig = require("./getDefaultFullConfig");
+const convertSourcePatternToPathRegExp = require("./convertSourcePatternToPathRegExp");
+const getCorrespondingGroups = require("./getCorrespondingGroups");
 const getFullConfig = require("./getFullConfig");
 const normalizeConfig = require("./normalizeConfig");
-
-function getDefaultConfig() {
-    return getDefaultFullConfig().packages["*"];
-}
 
 function deepCopy(object) {
     if (typeof object !== "object" || object === null) {
@@ -28,18 +24,103 @@ function deepCopy(object) {
     return copy;
 }
 
-module.exports = function getFolderConfig(folder) {
-    const {
-        type,
-        value
-    } = extractFolderConfig(
-        null, getFullConfig().packages, folder, null
-    );
-    if (type === "default") {
-        return getDefaultConfig();
+function ensureArray(obj) {
+    return Array.isArray(obj) ? obj : [obj];
+}
+
+function reduceScoreFn(result, group) {
+    switch (true) {
+        case (
+            group[1] === "*"
+        ): return result + 0;
+        case (
+            group[1][0] === "*" ||
+            group[1][0] === "!"
+        ): return result + 1;
+        case (
+            group[1][0] === "+" ||
+            group[1][0] === "?"
+        ): return result + 2;
+        case (
+            group[1][0] === "@"
+        ): return result + 3;
     }
-    return normalizeConfig(
-        deepCopy(value),
-        folder, type === "specific"
+}
+
+module.exports = function getFolderConfig(folder, convertSourcePatterns = true) {
+    const fullConfig = ensureArray(getFullConfig());
+
+    const matchingConfig = [];
+
+    fullConfig.forEach(config => {
+        let { packages } = config;
+        if (!packages) {
+            throw new Error(
+                "Invalid config: no packages defined"
+            );
+        }
+
+        if (typeof packages === "string") {
+            packages = { [packages]: null };
+        } else if (Array.isArray(packages)) {
+            packages = packages.reduce((result, package) => {
+                if (typeof package !== "string") {
+                    throw new Error(
+                        "Invalid config: package glob must be a string"
+                    );
+                }
+                result[package] = null;
+                return result;
+            }, {});
+        } else if (typeof packages !== "object") {
+            throw new Error(
+                "Invalid config: package must be a string, an array or an object"
+            );
+        }
+
+        Object.entries(packages).forEach(([ key, value ]) => {
+            const regex = convertSourcePatternToPathRegExp("", key);
+
+            if (!folder.match(regex)) {
+                return;
+            }
+
+            matchingConfig.push({
+                ...value,
+                glob: key
+            });
+        });
+        
+        matchingConfig.forEach((value, index, array) => {
+            array[index] = {
+                ...config,
+                ...value,
+                groups: getCorrespondingGroups(
+                    folder, value.glob
+                )
+            };
+        });
+    });
+    const result = normalizeConfig(
+        deepCopy(matchingConfig.sort((a, b) => {
+            if (a.groups.length !== b.groups.length) {
+                return a.groups.length > b.groups.length ? -1 : 1
+            }
+            const aScore = a.groups.reduce(reduceScoreFn, 0);
+            const bScore = b.groups.reduce(reduceScoreFn, 0);
+
+            return aScore - bScore;
+        }).reduce((result, value) => {
+            return {
+                ...result,
+                ...value
+            };
+        }, {})), folder, convertSourcePatterns
     );
+
+    delete result.packages;
+    delete result.glob;
+    delete result.groups;
+
+    return result;
 }

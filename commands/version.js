@@ -1,7 +1,6 @@
 const getChanged = require("../utils/getChanged");
 const getLastKnownVersion = require("../utils/getLastKnownVersion");
 const increaseVersion = require("../utils/increaseVersion");
-const setPackageVersion = require("../utils/setPackageVersion");
 const runCommand = require("../utils/runCommand");
 
 const yargs = require("yargs");
@@ -42,7 +41,7 @@ const { prompt } = require("inquirer");
         return;
     }
 
-    let changed = getChanged({ filtered: false });
+    let changed = await getChanged({ filtered: false });
     if (changed.length === 0) {
         console.log("No packages found");
         return;
@@ -77,7 +76,7 @@ const { prompt } = require("inquirer");
     for (let i = 0; i < changed.length; i++) {
         const package = changed[i];
 
-        const lastKnownVersion = getLastKnownVersion(package);
+        const lastKnownVersion = await getLastKnownVersion(package);
         let version;
         const {
             versionReleaseType
@@ -157,7 +156,7 @@ const { prompt } = require("inquirer");
     selectedVersions.forEach(([{name, version}, newVersion]) => {
         process.stdout.write(`${name}\n  ${version} → ${newVersion}\n\n`);
     });
-
+    
     if (
         !argv.yes &&
         !(await prompt({
@@ -168,27 +167,38 @@ const { prompt } = require("inquirer");
     ) {
         return;
     }
+    
+    for (let i = 0; i < selectedVersions.length; i++) {
+        const [package, version] = selectedVersions[i];
 
-    selectedVersions.forEach(([package, version]) => {
-        setPackageVersion(package, version);
-    });
+        await package.manager.setVersion(package, version);
+    }
 
     if (argv.increaseOnly) {
         return;
     }
 
     runCommand("build");
-    [
+
+    execSync(`git add -A`, { stdio: "ignore" });
+    const hasAnythingChanged = execSync(
+        `git diff --cached --name-only`,
+        { stdio: "pipe", encoding: "utf-8" }
+    ) !== "";
+
+    ([
         "git add -A",
-        `git commit -m "chore: increase versions" -m "${
-            changed.map(({ name, version }) => {
-                return ` - ${name}@${version}`;
-            }).join("\n")
-        }"`,
+        ...(hasAnythingChanged ?
+            [`git commit -m "chore: increase versions" -m "${
+                changed.map(({ name, version }) => {
+                    return ` - ${name}@${version}`;
+                }).join("\n")
+            }"`] : []
+        ),
         ...changed.map(({ name, version}) => {
             return `git tag "${name}@${version}" HEAD`
         })
-    ].forEach(command => {
+    ]).forEach(command => {
         execSync(
             command,
             { stdio: "pipe", encoding: "utf-8" }

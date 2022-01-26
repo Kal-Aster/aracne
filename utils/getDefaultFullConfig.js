@@ -1,13 +1,19 @@
 module.exports = function getDefaultFullConfig() {
     return {
+        "lang": "js",
+        "source": "**/*.js",
         "packages": {
-            "*": {
-                lang: "js",
-                manager: "npm",
-                publish: "npm publish",
-                build: null,
-                source: "**/*.js"
+            "packages/*": null,
+            "packages/api": {
+                "lang": "php"
             }
         }
     };
+    // return [
+    //     {
+    //         "lang": "js",
+    //         "source": "**/*.js",
+    //         "packages": "packages/*"
+    //     }
+    // ];
 }

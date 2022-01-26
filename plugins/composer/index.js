@@ -1,6 +1,6 @@
 const { execSync } = require("child_process");
 const { existsSync, readFileSync, rmSync, writeFileSync, lstatSync } = require("fs");
-const { join } = require("path");
+const { join, relative } = require("path");
 
 module.exports = {
     name: "composer",
@@ -58,7 +58,7 @@ module.exports = {
 
         return package;
     },
-    async getLocalDependencies(package, packages) {
+    async initLocalDependencies(package, packages) {
         Object.defineProperties(package, {
             localDependencies: {
                 value: (
@@ -106,10 +106,10 @@ module.exports = {
         return existsSync(join(folder, "composer.json"));
     },
     async install(package) {
-        const installed = JSON.parse(execSync(
+        const installed = (JSON.parse(execSync(
             `cd "${package.folder}" && composer show -D -f json`,
             { stdio: "pipe", encoding: "utf-8" }
-        )).installed.map(({ name }) => name);
+        )).installed ?? []).map(({ name }) => name);
 
         if (package.dependencies.concat(
                 package.devDependencies
@@ -134,113 +134,45 @@ module.exports = {
     },
     async pack(package) { },
     async restoreLocalDependencies(package) {
-        // const localDependencies = package.localDependencies.concat(
-        //     package.localPeerDependencies
-        // ).concat(
-        //     package.localDevDependencies
-        // );
-        // if (localDependencies.length === 0) {
-        //     return;
-        // }
-    
-        // const packageJSONPath = join(package.folder, "package.json");
-        // let packageJSON = readFileSync(
-        //     packageJSONPath, { encoding: "utf-8" }
-        // );
-        // localDependencies.forEach(dependency => {
-        //     packageJSON = replaceDependencyOrigin(
-        //         packageJSON,
-        //         dependency.name,
-        //         dependency.version
-        //     );
-        // });
-        // writeFileSync(packageJSONPath, packageJSON);
+        execSync([
+            `cd "${package.folder}"`,
+            ...package.localDependencies.concat(
+                package.localDevDependencies
+            ).map(({ name }) => {
+                return `composer config --unset repositories.${name}`
+            })
+        ].join(" && "), {
+            stdio: "inherit", encoding: "utf-8"
+        });
     },
     async setupLocalDependencies(package) {
-        // const relativePackedPackagesPath = getPackedPackagesPath(true);
-
-        // const localDependencies = package.localDependencies.concat(
-        //     package.localPeerDependencies
-        // ).concat(
-        //     package.localDevDependencies
-        // );
-        // if (localDependencies.length > 0) {
-        //     const packageJSONPath = join(package.folder, "package.json");
-        //     let packageJSON = readFileSync(
-        //         packageJSONPath, { encoding: "utf-8" }
-        //     );
-        //     localDependencies.forEach(dependency => {
-        //         packageJSON = replaceDependencyOrigin(
-        //             packageJSON,
-        //             dependency.name,
-        //             `file:${join(
-        //                 relativePackedPackagesPath, dependency.packFilename
-        //             )}`
-        //         );
-        //     });
-        //     writeFileSync(packageJSONPath, packageJSON);
-        // }
+        execSync([
+            `cd "${package.folder}"`,
+            ...package.localDependencies.concat(
+                package.localDevDependencies
+            ).map(({ name, folder }) => {
+                return `composer config repositories.${name} "${JSON.stringify({
+                    type: "path",
+                    url: relative(package.folder, folder),
+                    options: {
+                        symlink: false
+                    }
+                }).replace(/"/g, "\\\"")}"`
+            })
+        ].join(" && "), {
+            stdio: "inherit", encoding: "utf-8"
+        });
     },
     async setVersion(package, version) {
         if (package.version === version) {
             return;
         }
     
-        const composerJSONPath = join(
-            package.folder, "composer.json"
-        );
-        let composerJSONContent = readFileSync(
-            composerJSONPath, { encoding: "utf-8" }
-        );
-    
-        let bracketCount = 0;
-        let versionUpdated = false;
-        for (let i = 0; i < composerJSONContent.length; i++) {
-            const char = composerJSONContent[i];
-            if (char === "{") {
-                bracketCount++;
-                continue;
-            }
-            if (char === "}") {
-                bracketCount--;
-                continue;
-            }
-            if (bracketCount !== 1) {
-                continue;
-            }
-    
-            if (char !== "v") {
-                continue;
-            }
-            const match = composerJSONContent.substr(
-                i - 1
-            ).match(
-                /^"version"\s*:\s*"(.*)"/
-            );
-            if (match == null) {
-                continue;
-            }
-            const { index } = match[0].match(
-                new RegExp(`(?<=^"version"\\s*:\\s*")${
-                    match[1]
-                }(?=")`)
-            );
-            const startIndex = i - 1 + match.index + index;
-            const endIndex = startIndex + match[1].length;
-    
-            composerJSONContent = (
-                composerJSONContent.substr(0, startIndex) +
-                version +
-                composerJSONContent.substr(endIndex)
-            );
-            versionUpdated = true;
-            break;
-        }
-    
-        if (!versionUpdated) {
-            throw new Error("Couldn't update version");
-        }
-    
-        writeFileSync(composerJSONPath, composerJSONContent);
+        execSync([
+            `cd "${package.folder}"`,
+            `composer config version ${version}`
+        ].join(" && "), {
+            stdio: "inherit", encoding: "utf-8"
+        });
     }
 };

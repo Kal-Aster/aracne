@@ -7,5 +7,7 @@ module.exports = function convertSourcePatternToPathRegExp(
         path.replace(/[\\\/]+/, "/")
     }/${
         sourcePattern.replace(/^\.?(\\\\|\/)/, "")
-    }`, { globstar: true, extended: true }).regex;
+    }`.replace(/^\/|\/$/g, ""), {
+        globstar: true, extended: true
+    }).regex;
 };

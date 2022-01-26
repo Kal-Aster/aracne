@@ -1,6 +1,9 @@
 const getPackages = require("../utils/getPackages");
-const restorePackage = require("../utils/restorePackage");
 
-getPackages({
-    includeDevDeps: true
-}).forEach(restorePackage);
+(async () => {
+    (await getPackages({
+        includeDevDeps: true
+    })).forEach((package) => {
+        package.manager.restoreLocalDependencies(package);
+    });
+})();

@@ -2,14 +2,16 @@ const convertSourcePatternToPathRegExp = require("./convertSourcePatternToPathRe
 const normalizeFolderConfig = require("./normalizeFolderConfig");
 const normalizeLanguageConfig = require("./normalizeLanguageConfig");
 
-module.exports = function normalizeConfig(config, folder, isSpecific) {
+module.exports = function normalizeConfig(
+    config, folder, convertSourcePatterns = true
+) {
     normalizeLanguageConfig(config);
     [
         "build",
         "publish",
         "source"
     ].forEach(configName => {
-        normalizeFolderConfig(config, configName, isSpecific ? undefined : folder);
+        normalizeFolderConfig(config, configName);
         switch (configName) {
             case "build": {
                 if (Array.isArray(config.build)) {
@@ -18,6 +20,10 @@ module.exports = function normalizeConfig(config, folder, isSpecific) {
                 break;
             }
             case "source": {
+                if (!convertSourcePatterns) {
+                    break;
+                }
+
                 if (typeof config.source === "string") {
                     config.source = [ config.source ];
                 }

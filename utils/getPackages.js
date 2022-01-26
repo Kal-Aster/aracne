@@ -27,7 +27,7 @@ module.exports = async function getPackages({
         }));
     }, [])
     
-    for (let i = 0; i < packages.length; i++) {
+    for (let i = packages.length -1; i >= 0; i--) {
         const {
             folder,
             config
@@ -37,7 +37,17 @@ module.exports = async function getPackages({
             config.lang, config.manager
         ).getPackage(folder);
         
-        package.config = config;
+        if (package == null) {
+            console.log(`Cannot get package in ${folder}`);
+            packages.splice(i, 1);
+            continue;
+        }
+        Object.defineProperties(package, {
+            config: {
+                get() { return config; },
+                configurable: true
+            }
+        });
         packages[i] = package;
     }
 
@@ -48,7 +58,7 @@ module.exports = async function getPackages({
             return lang === package.config.lang;
         });
     
-        packages[i] = await package.manager.getLocalDependencies(
+        packages[i] = await package.manager.initLocalDependencies(
             package, filteredPackages
         );
     }

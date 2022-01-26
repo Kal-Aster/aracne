@@ -47,6 +47,10 @@ Following the configurable properties.
 This defines the command that will be run to build the packages.  
 It can be `null`, a string, an array of string or an object having as keys the name of the package or "\*", to select them all, and as value `null`, to skip the build, or a string or an array of string, defining the command to run.
 
+### `"lang"`
+### `"manager"`
+### `"packages"`
+### `"publish"`
 ### `"source"`
 This defines what file implies the need of package version increase after the their editing.  
 It can be a string, an array of string or an object having as keys the name of the package or "\*", to select them all, and as value a string or an array of string.  

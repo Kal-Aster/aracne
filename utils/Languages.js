@@ -28,14 +28,14 @@ module.exports = {
         });
     },
     getDefaultConfig(lang, config) {
+        if (config === "managers") {
+            return undefined;
+        }
+
         const language = languages.filter(
             ({ name }) => name === lang
         )[0];
         if (!language) {
-            return undefined;
-        }
-
-        if (config === "managers") {
             return undefined;
         }
 
