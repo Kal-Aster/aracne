@@ -1,8 +1,5 @@
-const getSourcePatterns = require("./getSourcePatterns");
-
 const { lstatSync, readdirSync } = require("fs");
 const { join } = require("path");
-const convertSourcePatternToPathRegExp = require("./convertSourcePatternToPathRegExp");
 
 function walkDirectoryFiles(path, callback, root = true) {
     readdirSync(path).forEach(file => {
@@ -22,17 +19,10 @@ function walkDirectoryFiles(path, callback, root = true) {
 
 module.exports = function getMostRecentMTimeMs(package) {
     let mostRecentMTimeMs = 0;
-    const sourcePatternRegexes = (
-        getSourcePatterns(package).map(pattern => {
-            return convertSourcePatternToPathRegExp(
-                package.path, pattern
-            );
-        })
-    );
 
-    walkDirectoryFiles(package.path, file => {
+    walkDirectoryFiles(package.folder, file => {
         file = file.replace(/[\\\/]+/g, "/");
-        if (!sourcePatternRegexes.some(regex => {
+        if (!package.config.source.some(regex => {
             return file.match(regex) != null;
         })) {
             return;

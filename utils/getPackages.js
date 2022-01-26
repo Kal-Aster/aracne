@@ -1,99 +1,67 @@
-const {
-    existsSync,
-    readdirSync,
-    readFileSync
-} = require("fs");
-const {
-    join,
-    sep: pathSeparator
-} = require("path");
+const getPackagesPaths = require("./getPackagesPaths");
+const getFolderConfig = require("./getFolderConfig");
+const Languages = require("./Languages");
+
+const { readdirSync } = require("fs");
+const { join } = require("path");
 
 const defaultOptions = {
     sorted: true,
     includeDevDeps: false
 };
 
-module.exports = function getPackages({
+module.exports = async function getPackages({
     sorted,
     includeDevDeps
 } = defaultOptions) {
     sorted = sorted ?? defaultOptions.sorted;
     includeDevDeps = includeDevDeps ?? defaultOptions.includeDevDeps;
 
-    const packages = readdirSync("packages").filter(path => {
-        return existsSync(join("packages", path, "package.json"));
-    }).map(packageDir => {
-        const path = join("packages", packageDir);
+    const packages = getPackagesPaths().reduce((folders, packagesPath) => {
+        return folders.concat(readdirSync(packagesPath).map(path => {
+            const folder = join(packagesPath, path).replace(/[\\\/]+/, "/");
+            return {
+                folder,
+                config: getFolderConfig(folder)
+            };
+        }));
+    }, [])
+    
+    for (let i = 0; i < packages.length; i++) {
         const {
-            name,
-            dependencies,
-            devDependencies,
-            peerDependencies,
-            version
-        } = JSON.parse(readFileSync(
-            join(path, "package.json"),
-            { encoding: "utf-8" }
-        ));
+            folder,
+            config
+        } = packages[i];
+        
+        const package = await Languages.getManager(
+            config.lang, config.manager
+        ).getPackage(folder);
+        
+        package.config = config;
+        packages[i] = package;
+    }
 
-        return {
-            path, name,
-            version,
-            dependencies: (
-                dependencies ? Object.keys(dependencies) : []
-            ),
-            devDependencies: (
-                devDependencies ? Object.keys(devDependencies) : []
-            ),
-            peerDependencies: (
-                peerDependencies ? Object.keys(peerDependencies) : []
-            )
-        };
-    }).map((package, _, packages) => {
-        const localDependencies = (
-            package.dependencies
-        ).map(dependency => {
-            const index = packages.findIndex(package => package.name === dependency);
-            if (index < 0) {
-                return null;
-            }
-            return packages[index];
-        }).filter(package => package != null);
+    for (let i = 0; i < packages.length; i++) {
+        const package = packages[i];
 
-        const localDevDependencies = (
-            package.devDependencies
-        ).map(dependency => {
-            const index = packages.findIndex(package => package.name === dependency);
-            if (index < 0) {
-                return null;
-            }
-            return packages[index];
-        }).filter(package => package != null);
-
-        const localPeerDependencies = (
-            package.peerDependencies
-        ).map(dependency => {
-            const index = packages.findIndex(package => package.name === dependency);
-            if (index < 0) {
-                return null;
-            }
-            return packages[index];
-        }).filter(package => package != null);
-
-        package.localDependencies = localDependencies;
-        package.localDevDependencies = localDevDependencies;
-        package.localPeerDependencies = localPeerDependencies;
-        return package;
-    });
+        const filteredPackages = packages.filter(({ config: { lang } }) => {
+            return lang === package.config.lang;
+        });
+    
+        packages[i] = await package.manager.getLocalDependencies(
+            package, filteredPackages
+        );
+    }
 
     if (!sorted) {
         return packages;
     }
 
-    return packages.reverse().reduce((result, package, _, packages) => {
-        return unshiftPackageAndLocalDependencies(package, packages, result);
+    return packages.reverse().reduce((result, package) => {
+        return unshiftPackageAndLocalDependencies(package, result);
     }, []);
 
-    function unshiftPackageAndLocalDependencies(package, packages, list) {
+    function unshiftPackageAndLocalDependencies(package, list) {
         list.unshift(package);
         const localDependencies = package.localDependencies.concat(
             package.localPeerDependencies
@@ -102,8 +70,7 @@ module.exports = function getPackages({
         );
         for (let i = localDependencies.length - 1; i >= 0; i--) {
             unshiftPackageAndLocalDependencies(
-                localDependencies[i],
-                packages, list
+                localDependencies[i], list
             );
         }
         for (let index = list.length - 1; index >= 0; index--) {
@@ -115,4 +82,4 @@ module.exports = function getPackages({
         }
         return list;
     }
-};
+}

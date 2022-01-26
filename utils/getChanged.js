@@ -1,11 +1,9 @@
-const convertSourcePatternToPathRegExp = require("./convertSourcePatternToPathRegExp");
+const getMilestoneTags = require("./getMilestoneTags");
+const getMostRecentMTimeMs = require("./getMostRecentMTimeMs");
 const getPackages = require("./getPackages");
-const getSourcePatterns = require("./getSourcePatterns");
 
 const { execSync } = require("child_process");
 const { lstatSync } = require("fs");
-const getMostRecentMTimeMs = require("./getMostRecentMTimeMs");
-const getMilestoneTags = require("./getMilestoneTags");
 
 const defaultOptions = {
     onlyDirectly: false,
@@ -13,13 +11,13 @@ const defaultOptions = {
     includeDevDeps: false
 };
 
-module.exports = function getChanged({
+module.exports = async function getChanged({
     onlyDirectly,
     filtered,
     includeDevDeps
 } = defaultOptions) {
     onlyDirectly = onlyDirectly ?? defaultOptions.onlyDirectly;
-    filtered = filtered ?? defaultOptions.filtered;
+    filtered = onlyDirectly || (filtered ?? defaultOptions.filtered);
     includeDevDeps = includeDevDeps ?? defaultOptions.includeDevDeps;
 
     const unstagedChanges = execSync(
@@ -27,9 +25,9 @@ module.exports = function getChanged({
         { encoding: "utf-8", stdio: "pipe" }
     ).split("\n").slice(0, -1);
 
-    const result = getPackages({
+    const result = (await getPackages({
         includeDevDeps
-    }).map(package => {
+    })).map(package => {
         const lastMilestoneTag = getMilestoneTags(package).pop() ?? null;
         const changes = (lastMilestoneTag == null ?
             null : execSync(
@@ -40,19 +38,13 @@ module.exports = function getChanged({
             )
         );
 
-        const sourcePatternRegexes = (
-            getSourcePatterns(package).map(pattern => {
-                return convertSourcePatternToPathRegExp(
-                    package.path, pattern
-                );
-            })
+        let mostRecentChangedTime = (changes === null ?
+            getMostRecentMTimeMs(package) : null
         );
-        
-        let mostRecentChangedTime = changes === null ? getMostRecentMTimeMs(package) : null;
         const directlyChanged = (changes === null ?
             mostRecentChangedTime !== 0 :
             changes.reduce((result, change) => {
-                if (!sourcePatternRegexes.some(regex => {
+                if (!package.config.source.some(regex => {
                     return change.match(regex) != null;
                 })) {
                     return result;
@@ -66,14 +58,13 @@ module.exports = function getChanged({
                 return true;
             }, false)
         );
-        package.directlyChanged = directlyChanged;
-
+        
         const localDependencies = package.localDependencies.concat(
             package.localPeerDependencies
         ).concat(
             includeDevDeps ? package.localDevDependencies : []
         );
-        package.mostRecentChangedTime = localDependencies.reduce(
+        mostRecentChangedTime = localDependencies.reduce(
             (mostRecentChangedTime, dep) => {
                 if (dep.mostRecentChangedTime > mostRecentChangedTime) {
                     return dep.mostRecentChangedTime;
@@ -81,10 +72,23 @@ module.exports = function getChanged({
                 return mostRecentChangedTime;
             }, mostRecentChangedTime ?? 0
         );
-        package.changed = (
-            directlyChanged ||
-            localDependencies.some(dep => dep.directlyChanged)
-        );
+        const depsChanged = localDependencies.some(dep => dep.changed);
+        const changed = directlyChanged || depsChanged;
+
+        Object.defineProperties(package, {
+            changed: {
+                get() { return changed; },
+                configurable: true
+            },
+            directlyChanged: {
+                get() { return directlyChanged; },
+                configurable: true
+            },
+            mostRecentChangedTime: {
+                get() { return mostRecentChangedTime; },
+                configurable: true
+            }
+        })
 
         return package;
     });
