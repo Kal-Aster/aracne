@@ -23,6 +23,20 @@ const configValidator = {
             }
             default: return false;
         }
+    },
+    publish: value => {
+        switch (typeof value) {
+            case "string": {
+                return value !== "";
+            }
+            case "object": {
+                return (
+                    value === null ||
+                    Array.isArray(value)
+                );
+            }
+            default: return false;
+        }
     }
 }
 
