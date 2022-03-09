@@ -8,7 +8,7 @@
   "license": "MIT",
   "dependencies": {
     "globrex": "^0.1.2",
-    "inquirer": "^8.2.0",
+    "inquirer": "^8.2.1",
     "installed-check-core": "^5.0.0",
     "regexp-match-indices": "^1.0.2",
     "yargs": "^17.3.1"
