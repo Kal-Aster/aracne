@@ -197,15 +197,14 @@ const { prompt } = require("inquirer");
     ) !== "";
 
     ([
-        "git add -A",
         ...(hasAnythingChanged ?
             [`git commit -m "chore: increase versions" -m "${
-                changed.map(({ name, version }) => {
+                selectedVersions.map(([{ name }, version]) => {
                     return ` - ${name}@${version}`;
                 }).join("\n")
             }"`] : []
         ),
-        ...changed.map(({ name, version}) => {
+        ...selectedVersions.map(([{ name }, version]) => {
             return `git tag "${name}@${version}" HEAD`
         })
     ]).forEach(command => {
