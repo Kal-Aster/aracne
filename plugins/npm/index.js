@@ -6,7 +6,7 @@ const installedCheck = require("installed-check-core");
 
 const { execSync } = require("child_process");
 const { existsSync, readFileSync, rmSync, writeFileSync, lstatSync, mkdirSync } = require("fs");
-const { join } = require("path");
+const { join, resolve } = require("path");
 
 module.exports = {
     name: "npm",
