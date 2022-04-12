@@ -45,7 +45,7 @@ const { prompt } = require("inquirer");
                 default: "public"
             })).access : null
         );
-        commands[i] = (`cd "${package.path}" && npm publish${
+        commands[i] = (`cd "${package.folder}" && npm publish${
             access != null ? ` --access ${access}` : ""
         }`);
     }
@@ -62,7 +62,7 @@ const { prompt } = require("inquirer");
             continue;
         }
 
-        commands[i] = (`cd "${package.path}" && npm publish${
+        commands[i] = (`cd "${package.folder}" && npm publish${
             access != null ? ` --access ${access}` : ""
         }`);
     }
